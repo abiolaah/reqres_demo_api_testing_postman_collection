@@ -1,0 +1,1135 @@
+{
+  "info": {
+    "_postman_id": "126548f1-d98e-4731-ae98-297d5e51e96b",
+    "name": "ReqResCollection",
+    "description": "This collection is designed to test and demonstrate core API workflows using the ReqRes service. It includes requests for authentication, retrieving user data, creating users, updating user details, and deleting users.\n\nThe collection is organized by request type, with separate folders for GET, POST, PUT/PATCH, DELETE, authentication, and negative testing. It covers both standard CRUD operations and basic validation of error handling, making it useful for learning API testing, practicing request organization, and validating common user-related endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "17476880"
+  },
+  "item": [
+    {
+      "name": "GET Request",
+      "item": [
+        {
+          "name": "Get Users",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"baseUrl\", pm.environment.get(\"baseUrl\") || \"https://reqres.in/api\");",
+                  "",
+                  "pm.environment.set(\"api_key\", pm.environment.get(\"api_key\") || \"\");"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const schema = {",
+                  "  \"type\": \"object\",",
+                  "  \"required\": [],",
+                  "  \"properties\": {",
+                  "    \"page\": {",
+                  "      \"type\": \"number\"",
+                  "    },",
+                  "    \"per_page\": {",
+                  "      \"type\": \"number\"",
+                  "    },",
+                  "    \"total\": {",
+                  "      \"type\": \"number\"",
+                  "    },",
+                  "    \"total_pages\": {",
+                  "      \"type\": \"number\"",
+                  "    },",
+                  "    \"data\": {",
+                  "      \"type\": \"array\",",
+                  "      \"items\": {",
+                  "        \"type\": \"object\",",
+                  "        \"required\": [],",
+                  "        \"properties\": {",
+                  "          \"id\": {",
+                  "            \"type\": \"number\"",
+                  "          },",
+                  "          \"email\": {",
+                  "            \"type\": \"string\"",
+                  "          },",
+                  "          \"first_name\": {",
+                  "            \"type\": \"string\"",
+                  "          },",
+                  "          \"last_name\": {",
+                  "            \"type\": \"string\"",
+                  "          },",
+                  "          \"avatar\": {",
+                  "            \"type\": \"string\"",
+                  "          }",
+                  "        }",
+                  "      }",
+                  "    },",
+                  "    \"support\": {",
+                  "      \"type\": \"object\",",
+                  "      \"required\": [],",
+                  "      \"properties\": {",
+                  "        \"url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"text\": {",
+                  "          \"type\": \"string\"",
+                  "        }",
+                  "      }",
+                  "    },",
+                  "    \"_meta\": {",
+                  "      \"type\": \"object\",",
+                  "      \"required\": [],",
+                  "      \"properties\": {",
+                  "        \"powered_by\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"docs_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"upgrade_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"example_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"variant\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"message\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"cta\": {",
+                  "          \"type\": \"object\",",
+                  "          \"required\": [],",
+                  "          \"properties\": {",
+                  "            \"label\": {",
+                  "              \"type\": \"string\"",
+                  "            },",
+                  "            \"url\": {",
+                  "              \"type\": \"string\"",
+                  "            }",
+                  "          }",
+                  "        },",
+                  "        \"context\": {",
+                  "          \"type\": \"string\"",
+                  "        }",
+                  "      }",
+                  "    }",
+                  "  }",
+                  "}",
+                  "",
+                  "pm.test(\"GET users schema no pagination valid\", () => {",
+                  "  pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test(\"Users array exists\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data).to.be.an(\"array\");",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 400ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(400);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Paginated Users",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"baseUrl\", pm.environment.get(\"baseUrl\") || \"https://reqres.in/api\");",
+                  "",
+                  "pm.environment.set(\"api_key\", pm.environment.get(\"api_key\") || \"\");",
+                  "",
+                  "pm.environment.set(\"page\", pm.environment.get(\"page\") || 2);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const schema = {",
+                  "  \"type\": \"object\",",
+                  "  \"required\": [],",
+                  "  \"properties\": {",
+                  "    \"page\": {",
+                  "      \"type\": \"number\"",
+                  "    },",
+                  "    \"per_page\": {",
+                  "      \"type\": \"number\"",
+                  "    },",
+                  "    \"total\": {",
+                  "      \"type\": \"number\"",
+                  "    },",
+                  "    \"total_pages\": {",
+                  "      \"type\": \"number\"",
+                  "    },",
+                  "    \"data\": {",
+                  "      \"type\": \"array\",",
+                  "      \"items\": {",
+                  "        \"type\": \"object\",",
+                  "        \"required\": [],",
+                  "        \"properties\": {",
+                  "          \"id\": {",
+                  "            \"type\": \"number\"",
+                  "          },",
+                  "          \"email\": {",
+                  "            \"type\": \"string\"",
+                  "          },",
+                  "          \"first_name\": {",
+                  "            \"type\": \"string\"",
+                  "          },",
+                  "          \"last_name\": {",
+                  "            \"type\": \"string\"",
+                  "          },",
+                  "          \"avatar\": {",
+                  "            \"type\": \"string\"",
+                  "          }",
+                  "        }",
+                  "      }",
+                  "    },",
+                  "    \"support\": {",
+                  "      \"type\": \"object\",",
+                  "      \"required\": [],",
+                  "      \"properties\": {",
+                  "        \"url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"text\": {",
+                  "          \"type\": \"string\"",
+                  "        }",
+                  "      }",
+                  "    },",
+                  "    \"_meta\": {",
+                  "      \"type\": \"object\",",
+                  "      \"required\": [],",
+                  "      \"properties\": {",
+                  "        \"powered_by\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"docs_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"upgrade_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"example_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"variant\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"message\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"cta\": {",
+                  "          \"type\": \"object\",",
+                  "          \"required\": [],",
+                  "          \"properties\": {",
+                  "            \"label\": {",
+                  "              \"type\": \"string\"",
+                  "            },",
+                  "            \"url\": {",
+                  "              \"type\": \"string\"",
+                  "            }",
+                  "          }",
+                  "        },",
+                  "        \"context\": {",
+                  "          \"type\": \"string\"",
+                  "        }",
+                  "      }",
+                  "    }",
+                  "  }",
+                  "}",
+                  "",
+                  "pm.test(\"GET users schema  pagination valid\", () => {",
+                  "  pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test(\"Users array exists\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data).to.be.an(\"array\");",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 500ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(400);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users?page={{page}}",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "{{page}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Single User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"baseUrl\", pm.environment.get(\"baseUrl\") || \"https://reqres.in/api\");",
+                  "",
+                  "pm.environment.set(\"api_key\", pm.environment.get(\"api_key\") || \"\");",
+                  "",
+                  "pm.environment.set(\"constantUserId\", pm.environment.get(\"constantUserId\") || 2);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const schema = {",
+                  "  \"type\": \"object\",",
+                  "  \"required\": [],",
+                  "  \"properties\": {",
+                  "    \"data\": {",
+                  "      \"type\": \"object\",",
+                  "      \"required\": [],",
+                  "      \"properties\": {",
+                  "        \"id\": {",
+                  "          \"type\": \"number\"",
+                  "        },",
+                  "        \"email\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"first_name\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"last_name\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"avatar\": {",
+                  "          \"type\": \"string\"",
+                  "        }",
+                  "      }",
+                  "    },",
+                  "    \"support\": {",
+                  "      \"type\": \"object\",",
+                  "      \"required\": [],",
+                  "      \"properties\": {",
+                  "        \"url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"text\": {",
+                  "          \"type\": \"string\"",
+                  "        }",
+                  "      }",
+                  "    },",
+                  "    \"_meta\": {",
+                  "      \"type\": \"object\",",
+                  "      \"required\": [],",
+                  "      \"properties\": {",
+                  "        \"powered_by\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"docs_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"upgrade_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"example_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"variant\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"message\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"cta\": {",
+                  "          \"type\": \"object\",",
+                  "          \"required\": [],",
+                  "          \"properties\": {",
+                  "            \"label\": {",
+                  "              \"type\": \"string\"",
+                  "            },",
+                  "            \"url\": {",
+                  "              \"type\": \"string\"",
+                  "            }",
+                  "          }",
+                  "        },",
+                  "        \"context\": {",
+                  "          \"type\": \"string\"",
+                  "        }",
+                  "      }",
+                  "    }",
+                  "  }",
+                  "}",
+                  "",
+                  "pm.test(\"GET user schema valid\", () => {",
+                  "  pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "",
+                  "pm.test(\"User ID matches\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.data.id).to.eql(Number(pm.environment.get(\"constantUserId\")));",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 600ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(600);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/{{constantUserId}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{constantUserId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "POST Request",
+      "item": [
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"baseUrl\", pm.environment.get(\"baseUrl\") || \"https://reqres.in/api\");",
+                  "",
+                  "pm.environment.set(\"api_key\", pm.environment.get(\"api_key\") || \"\");",
+                  "",
+                  "const uniqueName = \"User_\" + Date.now();",
+                  "pm.environment.set(\"newUserName\", uniqueName);",
+                  "",
+                  "const job = \"Junior QA\";",
+                  "pm.environment.set(\"newJob\", job);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 201\", () => {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "const schema = {",
+                  "  \"type\": \"object\",",
+                  "  \"required\": [],",
+                  "  \"properties\": {",
+                  "    \"name\": {",
+                  "      \"type\": \"string\"",
+                  "    },",
+                  "    \"job\": {",
+                  "      \"type\": \"string\"",
+                  "    },",
+                  "    \"id\": {",
+                  "      \"type\": \"string\"",
+                  "    },",
+                  "    \"createdAt\": {",
+                  "      \"type\": \"string\"",
+                  "    },",
+                  "    \"_meta\": {",
+                  "      \"type\": \"object\",",
+                  "      \"required\": [],",
+                  "      \"properties\": {",
+                  "        \"powered_by\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"docs_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"upgrade_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"example_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"variant\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"message\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"cta\": {",
+                  "          \"type\": \"object\",",
+                  "          \"required\": [],",
+                  "          \"properties\": {",
+                  "            \"label\": {",
+                  "              \"type\": \"string\"",
+                  "            },",
+                  "            \"url\": {",
+                  "              \"type\": \"string\"",
+                  "            }",
+                  "          }",
+                  "        },",
+                  "        \"context\": {",
+                  "          \"type\": \"string\"",
+                  "        }",
+                  "      }",
+                  "    }",
+                  "  }",
+                  "}",
+                  "",
+                  "pm.test(\"POST user schema valid\", () => {",
+                  "  pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "",
+                  "pm.test(\"User created\", () => {",
+                  "    pm.expect(json.name).to.eql(pm.environment.get(\"newUserName\"));",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 400ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(400);",
+                  "});",
+                  "",
+                  "// Save ID for reuse",
+                  "pm.environment.set(\"createdUserId\", json.id);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{newUserName}}\",\n  \"job\": \"{{newJob}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DELETE Request",
+      "item": [
+        {
+          "name": "Delete User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"baseUrl\", pm.environment.get(\"baseUrl\") || \"https://reqres.in/api\");",
+                  "",
+                  "pm.environment.set(\"api_key\", pm.environment.get(\"api_key\") || \"\");",
+                  "",
+                  "pm.environment.set(\"deletedUserId\", pm.environment.get(\"createdUserId\") || 2);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 204\", () => {",
+                  "    pm.response.to.have.status(204);",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 400ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(400);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/{{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{userId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PUT/PATCH Request",
+      "item": [
+        {
+          "name": "Update a User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"baseUrl\", pm.environment.get(\"baseUrl\") || \"https://reqres.in/api\");",
+                  "",
+                  "pm.environment.set(\"api_key\", pm.environment.get(\"api_key\") || \"\");",
+                  "",
+                  "pm.environment.set(\"userId\", pm.environment.get(\"createdUserId\") || 2);",
+                  "",
+                  "pm.environment.set(\"updatedUserName\", pm.environment.get(\"updatedUserName\") || \"Jane Updated\");",
+                  "",
+                  "pm.environment.set(\"updatedJob\", pm.environment.get(\"updatedJob\") || \"Software Engineer in Test\");"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const schema = {",
+                  "  \"type\": \"object\",",
+                  "  \"required\": [],",
+                  "  \"properties\": {",
+                  "    \"name\": {",
+                  "      \"type\": \"string\"",
+                  "    },",
+                  "    \"job\": {",
+                  "      \"type\": \"string\"",
+                  "    },",
+                  "    \"updatedAt\": {",
+                  "      \"type\": \"string\"",
+                  "    },",
+                  "    \"_meta\": {",
+                  "      \"type\": \"object\",",
+                  "      \"required\": [],",
+                  "      \"properties\": {",
+                  "        \"powered_by\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"docs_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"upgrade_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"example_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"variant\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"message\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"cta\": {",
+                  "          \"type\": \"object\",",
+                  "          \"required\": [],",
+                  "          \"properties\": {",
+                  "            \"label\": {",
+                  "              \"type\": \"string\"",
+                  "            },",
+                  "            \"url\": {",
+                  "              \"type\": \"string\"",
+                  "            }",
+                  "          }",
+                  "        },",
+                  "        \"context\": {",
+                  "          \"type\": \"string\"",
+                  "        }",
+                  "      }",
+                  "    }",
+                  "  }",
+                  "}",
+                  "",
+                  "pm.test(\"PUT user schema valid\", () => {",
+                  "  pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test(\"UpdatedAt exists\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"updatedAt\");",
+                  "});",
+                  "",
+                  "pm.test(\"User Name matches\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.name).to.eql(pm.environment.get(\"updatedUserName\"));",
+                  "});",
+                  "",
+                  "pm.test(\"User Job matches\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.job).to.eql(pm.environment.get(\"updatedJob\"));",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 400ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(400);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{updatedUserName}}\",\n  \"job\": \"{{updatedJob}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/{{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{userId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Partial Update",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"baseUrl\", pm.environment.get(\"baseUrl\") || \"https://reqres.in/api\");",
+                  "",
+                  "pm.environment.set(\"api_key\", pm.environment.get(\"api_key\") || \"\");",
+                  "",
+                  "pm.environment.set(\"userId\", pm.environment.get(\"createdUserId\") || 2);",
+                  "",
+                  "const job = \"Lead QA\" ;",
+                  "pm.environment.set(\"newJob\", job);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 200\", () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const schema = {",
+                  "  \"type\": \"object\",",
+                  "  \"required\": [],",
+                  "  \"properties\": {",
+                  "    \"job\": {",
+                  "      \"type\": \"string\"",
+                  "    },",
+                  "    \"updatedAt\": {",
+                  "      \"type\": \"string\"",
+                  "    },",
+                  "    \"_meta\": {",
+                  "      \"type\": \"object\",",
+                  "      \"required\": [],",
+                  "      \"properties\": {",
+                  "        \"powered_by\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"docs_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"upgrade_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"example_url\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"variant\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"message\": {",
+                  "          \"type\": \"string\"",
+                  "        },",
+                  "        \"cta\": {",
+                  "          \"type\": \"object\",",
+                  "          \"required\": [],",
+                  "          \"properties\": {",
+                  "            \"label\": {",
+                  "              \"type\": \"string\"",
+                  "            },",
+                  "            \"url\": {",
+                  "              \"type\": \"string\"",
+                  "            }",
+                  "          }",
+                  "        },",
+                  "        \"context\": {",
+                  "          \"type\": \"string\"",
+                  "        }",
+                  "      }",
+                  "    }",
+                  "  }",
+                  "}",
+                  "",
+                  "",
+                  "pm.test(\"PATCH user schema valid\", () => {",
+                  "  pm.response.to.have.jsonSchema(schema);",
+                  "});",
+                  "",
+                  "pm.test(\"UpdatedAt exists\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"updatedAt\");",
+                  "});",
+                  "",
+                  "pm.test(\"Job matches\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.job).to.eql(pm.environment.get(\"newJob\"));",
+                  "});",
+                  "",
+                  "pm.test(\"Response time is less than 400ms\", () => {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(400);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"job\": \"{{newJob}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/{{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{userId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Negative Test",
+      "item": [
+        {
+          "name": "Negative Get Single User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.environment.set(\"baseUrl\", pm.environment.get(\"baseUrl\") || \"https://reqres.in/api\");",
+                  "",
+                  "pm.environment.set(\"api_key\", pm.environment.get(\"api_key\") || \"\");",
+                  "",
+                  "pm.environment.set(\"negativeUserId\",  pm.environment.get(\"negativeUserId\") || 0);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 404\", () => {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/{{negativeUserId}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{negativeUserId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Negative Login: Missing Password",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Ensure base URL exists",
+                  "pm.environment.set(\"baseUrl\", pm.environment.get(\"baseUrl\") || \"https://reqres.in/api\");"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", () => {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Error is returned\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"error\");",
+                  "});",
+                  "",
+                  "// confirm error message",
+                  "pm.test(\"Error message is 'Missing password'\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.error).to.eql(\"Missing password\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Negative Login: Incorrect Data",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Ensure base URL exists",
+                  "pm.environment.set(\"baseUrl\", pm.environment.get(\"baseUrl\") || \"https://reqres.in/api\");"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", () => {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"Error is returned\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property(\"error\");",
+                  "});",
+                  "",
+                  "// confirm error message",
+                  "pm.test(\"Error message is 'user not found'\", () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.error).to.eql(\"user not found\");",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{api_key}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

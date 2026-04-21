@@ -1,0 +1,94 @@
+{
+	"id": "cc8ed635-df65-4f50-bec0-678cf6b9979c",
+	"name": "ReqRes",
+	"values": [
+		{
+			"key": "base_url",
+			"value": "https://reqres.in/api",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "api_key",
+			"value": "reqres_e6bbdd160c744560a10a5588b1df5ca7",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "page",
+			"value": "2",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "userId",
+			"value": "721",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "resourceId",
+			"value": "2",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "newUserName",
+			"value": "User_1776649540921",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "createdUserId",
+			"value": "721",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "job",
+			"value": "Lead QA",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "newJob",
+			"value": "Junior QA",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "negativeUserId",
+			"value": "0",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "deletedUserId",
+			"value": "721",
+			"type": "any",
+			"enabled": true
+		},
+		{
+			"key": "constantUserId",
+			"value": "2",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "updatedUserName",
+			"value": "Jane Marina",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "updatedJob",
+			"value": "Senior QA",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"color": null,
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2026-04-20T01:56:48.191Z",
+	"_postman_exported_using": "Postman/12.6.8-260417-0231"
+}
