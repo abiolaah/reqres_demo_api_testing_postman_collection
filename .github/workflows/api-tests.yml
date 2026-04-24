@@ -14,4 +14,4 @@ jobs:
       - name: Install Newman
         run: npm install -g newman
       - name: Run API tests
-        run: newman run collections/collection.json -e environments/environment.json
+        run: newman run collections/collection.json -e environments/environment.json --env-var "api_key=${{ secrets.API_KEY }}"
