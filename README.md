@@ -23,5 +23,5 @@ This repo demonstrates API testing using Postman & Newman against the **ReqRes A
 ```bash
 newman run collections/collection.json \
   -e environments/environment.json \
-  -r html
+  --env-var "api_key=$(jq -r '.api_key' CONFIG.json)" -r html
 ```
