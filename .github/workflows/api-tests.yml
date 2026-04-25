@@ -52,14 +52,14 @@ jobs:
             -o artifacts/current-run/allure-report --clean
 
       # -----------------------------
-      # CHECKOUT GH-PAGES
+      # CHECKOUT GH_PAGES
       # -----------------------------
-      - name: Checkout gh-pages
+      - name: Checkout gh_pages
         continue-on-error: true
         uses: actions/checkout@v4
         with:
-          ref: gh-pages
-          path: gh-pages
+          ref: gh_pages
+          path: gh_pages
 
       # -----------------------------
       # BUILD DASHBOARD + HISTORY
@@ -70,12 +70,12 @@ jobs:
           mkdir -p pages/reports
 
           # ✅ Preserve previous reports
-          if [ -d gh-pages/reports ]; then
-            cp -r gh-pages/reports pages/
+          if [ -d gh_pages/reports ]; then
+            cp -r gh_pages/reports pages/
           fi
 
-          if [ -f gh-pages/history.json ]; then
-            cp gh-pages/history.json pages/history.json
+          if [ -f gh_pages/history.json ]; then
+            cp gh_pages/history.json pages/history.json
           else
             echo "[]" > pages/history.json
           fi
