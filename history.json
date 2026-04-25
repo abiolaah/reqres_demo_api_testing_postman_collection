@@ -1,0 +1,11 @@
+[
+  {
+    "id": "24929228050-1",
+    "time": "2026-04-25T10:52:26Z",
+    "status": "passed",
+    "pass": 36,
+    "fail": 0,
+    "report": "reports/24929228050-1/report.html",
+    "allure": "reports/24929228050-1/allure-report/index.html"
+  }
+]
