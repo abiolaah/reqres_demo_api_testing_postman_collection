@@ -47,5 +47,13 @@
     "pass": 36,
     "fail": 0,
     "report": "reports/24933215534-1/report.html"
+  },
+  {
+    "id": "24933313370-1",
+    "time": "2026-04-25T14:41:17Z",
+    "status": "failed",
+    "pass": 35,
+    "fail": 1,
+    "report": "reports/24933313370-1/report.html"
   }
 ]
