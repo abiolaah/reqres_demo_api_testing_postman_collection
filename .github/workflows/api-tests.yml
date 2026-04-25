@@ -18,8 +18,6 @@ jobs:
         run: |
           npm install -g newman newman-reporter-htmlextra
           sudo apt-get update && sudo apt-get install -y jq
-          npm install -g newman-reporter-allure
-          npm install -g allure-commandline --save-dev
 
       # -----------------------------
       # RUN TESTS
@@ -36,20 +34,10 @@ jobs:
             --reporters cli,json,htmlextra,allure \
             --reporter-json-export artifacts/current-run/report.json \
             --reporter-htmlextra-export artifacts/current-run/report.html \
-            --reporter-allure-export artifacts/current-run/allure-results
 
           EXIT_CODE=$?
           echo "newman_exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
           exit 0
-
-      # -----------------------------
-      # GENERATE ALLURE REPORT
-      # -----------------------------
-      - name: Generate Allure Report
-        run: |
-          mkdir -p artifacts/current-run/allure-report
-          allure generate artifacts/current-run/allure-results \
-            -o artifacts/current-run/allure-report --clean
 
       # -----------------------------
       # CHECKOUT GH_PAGES
@@ -86,7 +74,6 @@ jobs:
 
           cp artifacts/current-run/report.html "$RUN_DIR/"
           cp artifacts/current-run/report.json "$RUN_DIR/"
-          cp -r artifacts/current-run/allure-report "$RUN_DIR/"
 
           PASS=$(jq '.run.stats.assertions.total - .run.stats.assertions.failed' artifacts/current-run/report.json)
           FAIL=$(jq '.run.stats.assertions.failed' artifacts/current-run/report.json)
@@ -101,7 +88,6 @@ jobs:
             --arg status "$STATUS" \
             --arg time "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
             --arg report "reports/$RUN_ID/report.html" \
-            --arg allure "reports/$RUN_ID/allure-report/index.html" \
             --argjson pass "$PASS" \
             --argjson fail "$FAIL" \
             '. += [{
@@ -111,7 +97,6 @@ jobs:
               pass:$pass,
               fail:$fail,
               report:$report,
-              allure:$allure
             }]' pages/history.json)
 
           echo "$UPDATED" > pages/history.json
@@ -125,63 +110,228 @@ jobs:
           <!DOCTYPE html>
           <html>
           <head>
-            <title>API Test Dashboard</title>
+            <title>ReqRes API Test Dashboard</title>
+            <link rel="icon" type="image/x-icon" href="https://res.cloudinary.com/dixwarqdb/image/upload/v1777122850/favicon_wkbysq.ico">
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
             <style>
-              body{font-family:Arial;max-width:1100px;margin:auto}
-              table{border-collapse:collapse;width:100%}
-              th,td{border:1px solid #ddd;padding:6px}
-              th{background:#f4f4f4}
-              .pass{color:green;font-weight:bold}
-              .fail{color:red;font-weight:bold}
+              body {
+                margin: 0;
+                font-family: 'Segoe UI', sans-serif;
+                background: linear-gradient(135deg, #1e3c72, #2a5298);
+                color: #fff;
+              }
+
+              .container {
+                max-width: 1200px;
+                margin: auto;
+                padding: 20px;
+              }
+
+              h1 {
+                text-align: center;
+                margin-bottom: 20px;
+              }
+
+              .card {
+                background: #ffffff;
+                color: #333;
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+              }
+
+              .chart-container {
+                height: 350px;
+              }
+
+              table {
+                width: 100%;
+                border-collapse: collapse;
+              }
+
+              th {
+                background: #2a5298;
+                color: #fff;
+                padding: 10px;
+              }
+
+              td {
+                padding: 10px;
+                border-bottom: 1px solid #eee;
+              }
+
+              tr:hover {
+                background: #f5f7fa;
+              }
+
+              .badge {
+                padding: 5px 10px;
+                border-radius: 8px;
+                font-weight: bold;
+                text-transform: uppercase;
+                font-size: 12px;
+              }
+
+              .pass {
+                background: #d4edda;
+                color: #155724;
+              }
+
+              .fail {
+                background: #f8d7da;
+                color: #721c24;
+              }
+
+              a {
+                color: #2a5298;
+                font-weight: bold;
+                text-decoration: none;
+              }
+
+              a:hover {
+                text-decoration: underline;
+              }
+
+              @media (max-width: 768px) {
+                .chart-container {
+                  height: 250px;
+                }
+              }
             </style>
           </head>
+
           <body>
-            <h1>API Test Dashboard</h1>
+            <div class="container">
+              <h1>🚀 ReqRes API Test Dashboard</h1>
 
-            <canvas id="trend"></canvas>
+              <!-- Chart Card -->
+              <div class="card">
+                <h2>📊 Test Trends</h2>
+                <div class="chart-container">
+                  <canvas id="trend"></canvas>
+                </div>
+              </div>
 
-            <h2>Run History</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th><th>Time</th><th>Status</th>
-                  <th>Pass</th><th>Fail</th><th>Links</th>
-                </tr>
-              </thead>
-              <tbody id="rows"></tbody>
-            </table>
+              <!-- Table Card -->
+              <div class="card">
+                <h2>📜 Run History</h2>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Time</th>
+                      <th>Status</th>
+                      <th>Pass</th>
+                      <th>Fail</th>
+                      <th>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody id="rows"></tbody>
+                </table>
+              </div>
+            </div>
 
             <script>
               fetch('history.json')
-                .then(r=>r.json())
-                .then(data=>{
-                  const labels = data.map(d=>d.time);
-                  const fails = data.map(d=>d.fail);
+                .then(r => r.json())
+                .then(data => {
 
-                  new Chart(document.getElementById('trend'),{
-                    type:'line',
-                    data:{
-                      labels:labels,
-                      datasets:[{label:'Failures',data:fails}]
+                  const labels = data.map(d => d.time);
+                  const passData = data.map(d => d.pass);
+                  const failData = data.map(d => d.fail);
+
+                  const passRate = data.map(d => {
+                    const total = d.pass + d.fail;
+                    return total === 0 ? 0 : ((d.pass / total) * 100).toFixed(2);
+                  });
+
+                  new Chart(document.getElementById('trend'), {
+                    data: {
+                      labels: labels,
+                      datasets: [
+                        {
+                          type: 'bar',
+                          label: 'Passed',
+                          data: passData,
+                          backgroundColor: '#28a745',
+                          stack: 'tests',
+                          yAxisID: 'y'
+                        },
+                        {
+                          type: 'bar',
+                          label: 'Failed',
+                          data: failData,
+                          backgroundColor: '#dc3545',
+                          stack: 'tests',
+                          yAxisID: 'y'
+                        },
+                        {
+                          type: 'line',
+                          label: 'Pass Rate (%)',
+                          data: passRate,
+                          borderColor: '#ffc107',
+                          backgroundColor: '#ffc107',
+                          yAxisID: 'y1',
+                          tension: 0.3
+                        }
+                      ]
+                    },
+                    options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: {
+                          position: 'top'
+                        }
+                      },
+                      scales: {
+                        x: {
+                          stacked: true
+                        },
+                        y: {
+                          stacked: true,
+                          beginAtZero: true,
+                          title: {
+                            display: true,
+                            text: 'Assertions'
+                          }
+                        },
+                        y1: {
+                          position: 'right',
+                          min: 0,
+                          max: 100,
+                          grid: {
+                            drawOnChartArea: false
+                          },
+                          title: {
+                            display: true,
+                            text: 'Pass Rate (%)'
+                          }
+                        }
+                      }
                     }
                   });
 
                   const rows = document.getElementById('rows');
-                  data.reverse().forEach(d=>{
+
+                  data.reverse().forEach(d => {
                     rows.innerHTML += `
                       <tr>
                         <td>${d.id}</td>
                         <td>${d.time}</td>
-                        <td class="${d.status==='passed'?'pass':'fail'}">${d.status}</td>
+                        <td>
+                          <span class="badge ${d.status === 'passed' ? 'pass' : 'fail'}">
+                            ${d.status}
+                          </span>
+                        </td>
                         <td>${d.pass}</td>
                         <td>${d.fail}</td>
-                        <td>
-                          <a href="${d.report}">HTML</a> |
-                          <a href="${d.allure}">Allure</a>
-                        </td>
+                        <td><a href="${d.report}" target="_blank">View Report</a></td>
                       </tr>`;
                   });
+
                 });
             </script>
           </body>
@@ -204,8 +354,3 @@ jobs:
       - name: Fail if needed
         if: steps.run_tests.outputs.newman_exit_code != '0'
         run: exit 1
-
-      - name: Debug deployed files
-        run: |
-          echo "==== FILE STRUCTURE ===="
-          ls -R pages
