@@ -1,11 +1,11 @@
 [
   {
-    "id": "24929228050-1",
-    "time": "2026-04-25T10:52:26Z",
+    "id": "24929740185-1",
+    "time": "2026-04-25T11:22:01Z",
     "status": "passed",
     "pass": 36,
     "fail": 0,
-    "report": "reports/24929228050-1/report.html",
-    "allure": "reports/24929228050-1/allure-report/index.html"
+    "report": "reports/24929740185-1/report.html",
+    "allure": "reports/24929740185-1/allure-report/index.html"
   }
 ]
