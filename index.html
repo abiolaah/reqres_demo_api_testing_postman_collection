@@ -147,16 +147,18 @@
                 label: 'Passed',
                 data: passData,
                 backgroundColor: '#28a745',
-                stack: 'tests',
-                yAxisID: 'y'
+                yAxisID: 'y',
+                categoryPercentage: 0.6,
+                barPercentage: 0.8
               },
               {
                 type: 'bar',
                 label: 'Failed',
                 data: failData,
                 backgroundColor: '#dc3545',
-                stack: 'tests',
                 yAxisID: 'y'
+                categoryPercentage: 0.6,
+                barPercentage: 0.8
               },
               {
                 type: 'line',
@@ -166,6 +168,8 @@
                 backgroundColor: '#ffc107',
                 yAxisID: 'y1',
                 tension: 0.3
+                borderWidth: 3,
+                pointRadius: 4,
               }
             ]
           },
@@ -179,10 +183,10 @@
             },
             scales: {
               x: {
-                stacked: true
+                stacked: false
               },
               y: {
-                stacked: true,
+                stacked: false,
                 beginAtZero: true,
                 title: {
                   display: true,
@@ -194,7 +198,7 @@
                 min: 0,
                 max: 100,
                 grid: {
-                  drawOnChartArea: false
+                  drawOnChartArea: true
                 },
                 title: {
                   display: true,
