@@ -164,34 +164,38 @@ jobs:
           <html>
           <head>
             <title>ReqRes API Test Dashboard</title>
+            <link rel="icon" type="image/x-icon" href="https://res.cloudinary.com/dixwarqdb/image/upload/v1777122850/favicon_wkbysq.ico">
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-            <style>
-              body { margin:0; font-family:sans-serif; background:#1e3c72; color:#fff; }
-              .container { max-width:1200px; margin:auto; padding:20px; }
-              .card { background:#fff; color:#333; padding:20px; border-radius:10px; margin-bottom:20px; }
-              .chart-container { height:350px; }
-            </style>
+            <style> body { margin: 0; font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #1e3c72, #2a5298); color: #fff; } .container { max-width: 1200px; margin: auto; padding: 20px; } h1 { text-align: center; margin-bottom: 20px; } .card { background: #ffffff; color: #333; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); } .chart-container { height: 350px; } table { width: 100%; border-collapse: collapse; } th { background: #2a5298; color: #fff; padding: 10px; } td { padding: 10px; border-bottom: 1px solid #eee; } tr:hover { background: #f5f7fa; } .badge { padding: 5px 10px; border-radius: 8px; font-weight: bold; text-transform: uppercase; font-size: 12px; } .pass { background: #d4edda; color: #155724; } .fail { background: #f8d7da; color: #721c24; } a { color: #2a5298; font-weight: bold; text-decoration: none; } a:hover { text-decoration: underline; } @media (max-width: 768px) { .chart-container { height: 250px; } } </style>
           </head>
           <body>
             <div class="container">
-              <h1>ReqRes API Test Dashboard</h1>
-
-              <div class="card">
-                <canvas id="trend"></canvas>
+              <h1>🚀 ReqRes API Test Dashboard</h1> 
+              <!-- Chart Card --> 
+              <div class="card"> 
+                <h2>📊 Test Trends</h2>
+                 <div class="chart-container">
+                  <canvas id="trend"></canvas>
+                </div>
+                </div>
+                 <!-- Table Card -->
+                <div class="card"> 
+                  <h2>📜 Run History</h2> 
+                    <table>
+                     <thead>
+                      <tr>
+                       <th>ID</th> 
+                       <th>Time</th> 
+                       <th>Status</th> 
+                       <th>Pass</th> 
+                       <th>Fail</th> 
+                       <th>Details</th>
+                      </tr>
+                    </thead> 
+                    <tbody id="rows"></tbody> 
+                  </table> 
+                </div>
               </div>
-
-              <div class="card">
-                <table border="1" width="100%">
-                  <thead>
-                    <tr>
-                      <th>ID</th><th>Time</th><th>Status</th>
-                      <th>Pass</th><th>Fail</th><th>Report</th>
-                    </tr>
-                  </thead>
-                  <tbody id="rows"></tbody>
-                </table>
-              </div>
-            </div>
 
             <script>
               fetch('history.json')
@@ -207,15 +211,18 @@ jobs:
                   return total === 0 ? 0 : Number(((d.pass / total) * 100).toFixed(2));
                 });
 
+                const maxPassRate = Math.max(...passRate);
+                const y1Max = Math.min(110, Math.ceil(maxPassRate / 10) * 10 + 10);
+
                 new Chart(document.getElementById('trend'), {
                   data: {
                     labels,
                     datasets: [
-                      { type:'bar', label:'Pass', data:passData, backgroundColor:'#28a745' },
-                      { type:'bar', label:'Fail', data:failData, backgroundColor:'#dc3545' },
+                      { type:'bar', label:'Pass', data:passData, backgroundColor:'#28a745',yAxisID: 'y', categoryPercentage: 0.6, barPercentage: 0.8 },
+                      { type:'bar', label:'Fail', data:failData, backgroundColor:'#dc3545',yAxisID: 'y', categoryPercentage: 0.6, barPercentage: 0.8 },
                       {
                         type:'line',
-                        label:'Pass %',
+                        label:'Pass Rate %',
                         data:passRate,
                         borderColor:'#ffc107',
                         yAxisID:'y1',
@@ -228,13 +235,27 @@ jobs:
                   },
                   options:{
                     responsive:true,
+                    maintainAspectRatio: false, 
+                    plugins: {
+                      legend: {
+                        position: 'top' 
+                      } 
+                    },
                     scales:{
-                      y:{ beginAtZero:true },
+                    x:{
+                      stacked:false
+                    },
+                      y:{ 
+                        stacked:false,
+                        beginAtZero:true,
+                        title: { display: true, text: 'Assertions' }
+                      },
                       y1:{
                         position:'right',
                         min:0,
-                        max:100,
-                        grid:{ drawOnChartArea:false }
+                        max:y1Max,
+                        grid: { drawOnChartArea: true },
+                        title: { display: true, text: 'Pass Rate (%)' }
                       }
                     }
                   }
