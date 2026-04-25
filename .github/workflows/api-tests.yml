@@ -4,14 +4,126 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
-      - name: Install Newman
-        run: npm install -g newman
-      - name: Run API tests
-        run: newman run collections/collection.json -e environments/environment.json --env-var "api_key=${{ secrets.API_KEY }}"
+      - name: Install Newman and reporter
+        run: npm install -g newman newman-reporter-htmlextra
+
+      - name: Run API tests and generate reports
+        id: run_tests
+        run: |
+          set +e
+          mkdir -p artifacts/current-run
+          newman run collections/collection.json \
+            -e environments/environment.json \
+            --env-var "api_key=${{ secrets.API_KEY }}" \
+            --reporters cli,json,htmlextra \
+            --reporter-json-export artifacts/current-run/report.json \
+            --reporter-htmlextra-export artifacts/current-run/report.html
+          EXIT_CODE=$?
+          echo "newman_exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Checkout gh-pages branch
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Build run history for GitHub Pages
+        id: build_history
+        run: |
+          set -euo pipefail
+          mkdir -p pages/reports
+
+          if [ -f gh-pages/history.json ]; then
+            cp gh-pages/history.json pages/history.json
+          else
+            echo "[]" > pages/history.json
+          fi
+
+          RUN_ID="${{ github.run_id }}-${{ github.run_attempt }}"
+          RUN_DIR="pages/reports/$RUN_ID"
+          mkdir -p "$RUN_DIR"
+          cp artifacts/current-run/report.html "$RUN_DIR/report.html"
+          cp artifacts/current-run/report.json "$RUN_DIR/report.json"
+
+          PASS_COUNT=$(jq '.run.stats.assertions.total - .run.stats.assertions.failed - (.run.stats.assertions.pending // 0)' artifacts/current-run/report.json)
+          FAIL_COUNT=$(jq '.run.stats.assertions.failed' artifacts/current-run/report.json)
+          SKIP_COUNT=$(jq '.run.stats.assertions.pending // 0' artifacts/current-run/report.json)
+          STATUS="passed"
+          if [ "${{ steps.run_tests.outputs.newman_exit_code }}" != "0" ]; then
+            STATUS="failed"
+          fi
+
+          UPDATED_HISTORY=$(jq \
+            --arg run_id "$RUN_ID" \
+            --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            --arg status "$STATUS" \
+            --arg report_path "reports/$RUN_ID/report.html" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --argjson pass "$PASS_COUNT" \
+            --argjson fail "$FAIL_COUNT" \
+            --argjson skip "$SKIP_COUNT" \
+            '. += [{
+              run_id: $run_id,
+              timestamp: $timestamp,
+              status: $status,
+              pass: $pass,
+              fail: $fail,
+              skip: $skip,
+              report_path: $report_path,
+              run_url: $run_url
+            }]' pages/history.json)
+          echo "$UPDATED_HISTORY" > pages/history.json
+
+          TOTAL_RUNS=$(jq 'length' pages/history.json)
+          TOTAL_PASS=$(jq '[.[].pass] | add // 0' pages/history.json)
+          TOTAL_FAIL=$(jq '[.[].fail] | add // 0' pages/history.json)
+          TOTAL_SKIP=$(jq '[.[].skip] | add // 0' pages/history.json)
+
+          {
+            echo "<!doctype html>"
+            echo "<html><head><meta charset='utf-8'><title>ReqRes API Test Report</title>"
+            echo "<style>body{font-family:Arial,sans-serif;max-width:1000px;margin:2rem auto;padding:0 1rem;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ddd;padding:.5rem;text-align:left;}th{background:#f5f5f5;} .ok{color:#0a7f2e;font-weight:700;} .bad{color:#b00020;font-weight:700;}</style>"
+            echo "</head><body>"
+            echo "<h1>ReqRes API Test Dashboard</h1>"
+            echo "<p><strong>Total runs:</strong> $TOTAL_RUNS</p>"
+            echo "<p><strong>Total passed assertions:</strong> $TOTAL_PASS</p>"
+            echo "<p><strong>Total failed assertions:</strong> $TOTAL_FAIL</p>"
+            echo "<p><strong>Total skipped assertions:</strong> $TOTAL_SKIP</p>"
+            echo "<h2>Runs</h2>"
+            echo "<table><thead><tr><th>Run</th><th>Timestamp (UTC)</th><th>Status</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Links</th></tr></thead><tbody>"
+            jq -r 'reverse[] | "<tr><td>\(.run_id)</td><td>\(.timestamp)</td><td class=\"" + (if .status=="passed" then "ok" else "bad" end) + "\">\(.status)</td><td>\(.pass)</td><td>\(.fail)</td><td>\(.skip)</td><td><a href=\"\(.report_path)\">HTML report</a> | <a href=\"\(.run_url)\">Workflow run</a></td></tr>"' pages/history.json
+            echo "</tbody></table>"
+            echo "</body></html>"
+          } > pages/index.html
+
+      - name: Upload current run artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/current-run
+
+      - name: Publish reports to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: pages
+
+      - name: Mark workflow as failed if tests failed
+        if: steps.run_tests.outputs.newman_exit_code != '0'
+        run: |
+          echo "Newman tests failed."
+          exit 1
