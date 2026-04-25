@@ -105,7 +105,7 @@
           <tr>
             <td>${d.id}</td>
             <td>${d.time}</td>
-            <span class="badge ${d.status === 'passed' ? 'pass' : 'fail'}"> ${d.status.toUpperCase()} </span>
+            <td>$<span class="badge ${d.status === 'passed' ? 'pass' : 'fail'}"> ${d.status.toUpperCase()} </span></td>
             <td>${d.pass}</td>
             <td>${d.fail}</td>
             <td><a href="${d.report}" target="_blank">View</a></td>
