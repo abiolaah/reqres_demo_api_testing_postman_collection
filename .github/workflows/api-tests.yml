@@ -198,6 +198,19 @@ jobs:
               </div>
 
             <script>
+            function formatTime(isoString) {
+              const date = new Date(isoString);
+
+              return new Intl.DateTimeFormat('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              }).format(date);
+            }
               fetch('history.json')
               .then(r => r.json())
               .then(data => {
@@ -266,8 +279,8 @@ jobs:
                   rows.innerHTML += `
                     <tr>
                       <td>${d.id}</td>
-                      <td>${d.time}</td>
-                      <td>$<span class="badge ${d.status === 'passed' ? 'pass' : 'fail'}"> ${d.status.toUpperCase()} </span></td>
+                      <td>${formatTime(d.time)}</td>
+                      <td>$<span class="badge ${d.status === 'passed' ? 'pass' : 'fail'}"> {d.status.toUpperCase()} </span></td>
                       <td>${d.pass}</td>
                       <td>${d.fail}</td>
                       <td><a href="${d.report}" target="_blank">View</a></td>
