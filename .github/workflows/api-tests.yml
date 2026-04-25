@@ -3,7 +3,6 @@ name: ReqRes API Tests
 on:
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -14,37 +13,66 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Install Newman and reporter
-        run: npm install -g newman newman-reporter-htmlextra
 
-      - name: Run API tests and generate reports
+      - name: Install dependencies
+        run: |
+          npm install -g newman newman-reporter-htmlextra
+          sudo apt-get update && sudo apt-get install -y jq
+          npm install -g newman-reporter-allure
+          npm install -g allure-commandline --save-dev
+
+      # -----------------------------
+      # RUN TESTS
+      # -----------------------------
+      - name: Run API tests
         id: run_tests
         run: |
           set +e
           mkdir -p artifacts/current-run
+
           newman run collections/collection.json \
             -e environments/environment.json \
             --env-var "api_key=${{ secrets.API_KEY }}" \
-            --reporters cli,json,htmlextra \
+            --reporters cli,json,htmlextra,allure \
             --reporter-json-export artifacts/current-run/report.json \
-            --reporter-htmlextra-export artifacts/current-run/report.html
+            --reporter-htmlextra-export artifacts/current-run/report.html \
+            --reporter-allure-export artifacts/current-run/allure-results
+
           EXIT_CODE=$?
           echo "newman_exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
           exit 0
 
-      - name: Checkout gh-pages branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      # -----------------------------
+      # GENERATE ALLURE REPORT
+      # -----------------------------
+      - name: Generate Allure Report
+        run: |
+          mkdir -p artifacts/current-run/allure-report
+          allure generate artifacts/current-run/allure-results \
+            -o artifacts/current-run/allure-report --clean
+
+      # -----------------------------
+      # CHECKOUT GH-PAGES
+      # -----------------------------
+      - name: Checkout gh-pages
         continue-on-error: true
         uses: actions/checkout@v4
         with:
           ref: gh-pages
           path: gh-pages
 
-      - name: Build run history for GitHub Pages
-        id: build_history
+      # -----------------------------
+      # BUILD DASHBOARD + HISTORY
+      # -----------------------------
+      - name: Build dashboard
         run: |
           set -euo pipefail
           mkdir -p pages/reports
+
+          # ✅ Preserve previous reports
+          if [ -d gh-pages/reports ]; then
+            cp -r gh-pages/reports pages/
+          fi
 
           if [ -f gh-pages/history.json ]; then
             cp gh-pages/history.json pages/history.json
@@ -55,75 +83,123 @@ jobs:
           RUN_ID="${{ github.run_id }}-${{ github.run_attempt }}"
           RUN_DIR="pages/reports/$RUN_ID"
           mkdir -p "$RUN_DIR"
-          cp artifacts/current-run/report.html "$RUN_DIR/report.html"
-          cp artifacts/current-run/report.json "$RUN_DIR/report.json"
 
-          PASS_COUNT=$(jq '.run.stats.assertions.total - .run.stats.assertions.failed - (.run.stats.assertions.pending // 0)' artifacts/current-run/report.json)
-          FAIL_COUNT=$(jq '.run.stats.assertions.failed' artifacts/current-run/report.json)
-          SKIP_COUNT=$(jq '.run.stats.assertions.pending // 0' artifacts/current-run/report.json)
+          cp artifacts/current-run/report.html "$RUN_DIR/"
+          cp artifacts/current-run/report.json "$RUN_DIR/"
+          cp -r artifacts/current-run/allure-report "$RUN_DIR/"
+
+          PASS=$(jq '.run.stats.assertions.total - .run.stats.assertions.failed' artifacts/current-run/report.json)
+          FAIL=$(jq '.run.stats.assertions.failed' artifacts/current-run/report.json)
+
           STATUS="passed"
           if [ "${{ steps.run_tests.outputs.newman_exit_code }}" != "0" ]; then
             STATUS="failed"
           fi
 
-          UPDATED_HISTORY=$(jq \
-            --arg run_id "$RUN_ID" \
-            --arg timestamp "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+          UPDATED=$(jq \
+            --arg id "$RUN_ID" \
             --arg status "$STATUS" \
-            --arg report_path "reports/$RUN_ID/report.html" \
-            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            --argjson pass "$PASS_COUNT" \
-            --argjson fail "$FAIL_COUNT" \
-            --argjson skip "$SKIP_COUNT" \
+            --arg time "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            --arg report "reports/$RUN_ID/report.html" \
+            --arg allure "reports/$RUN_ID/allure-report/index.html" \
+            --argjson pass "$PASS" \
+            --argjson fail "$FAIL" \
             '. += [{
-              run_id: $run_id,
-              timestamp: $timestamp,
-              status: $status,
-              pass: $pass,
-              fail: $fail,
-              skip: $skip,
-              report_path: $report_path,
-              run_url: $run_url
+              id:$id,
+              time:$time,
+              status:$status,
+              pass:$pass,
+              fail:$fail,
+              report:$report,
+              allure:$allure
             }]' pages/history.json)
-          echo "$UPDATED_HISTORY" > pages/history.json
 
-          TOTAL_RUNS=$(jq 'length' pages/history.json)
-          TOTAL_PASS=$(jq '[.[].pass] | add // 0' pages/history.json)
-          TOTAL_FAIL=$(jq '[.[].fail] | add // 0' pages/history.json)
-          TOTAL_SKIP=$(jq '[.[].skip] | add // 0' pages/history.json)
+          echo "$UPDATED" > pages/history.json
 
-          {
-            echo "<!doctype html>"
-            echo "<html><head><meta charset='utf-8'><title>ReqRes API Test Report</title>"
-            echo "<style>body{font-family:Arial,sans-serif;max-width:1000px;margin:2rem auto;padding:0 1rem;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ddd;padding:.5rem;text-align:left;}th{background:#f5f5f5;} .ok{color:#0a7f2e;font-weight:700;} .bad{color:#b00020;font-weight:700;}</style>"
-            echo "</head><body>"
-            echo "<h1>ReqRes API Test Dashboard</h1>"
-            echo "<p><strong>Total runs:</strong> $TOTAL_RUNS</p>"
-            echo "<p><strong>Total passed assertions:</strong> $TOTAL_PASS</p>"
-            echo "<p><strong>Total failed assertions:</strong> $TOTAL_FAIL</p>"
-            echo "<p><strong>Total skipped assertions:</strong> $TOTAL_SKIP</p>"
-            echo "<h2>Runs</h2>"
-            echo "<table><thead><tr><th>Run</th><th>Timestamp (UTC)</th><th>Status</th><th>Passed</th><th>Failed</th><th>Skipped</th><th>Links</th></tr></thead><tbody>"
-            jq -r 'reverse[] | "<tr><td>\(.run_id)</td><td>\(.timestamp)</td><td class=\"" + (if .status=="passed" then "ok" else "bad" end) + "\">\(.status)</td><td>\(.pass)</td><td>\(.fail)</td><td>\(.skip)</td><td><a href=\"\(.report_path)\">HTML report</a> | <a href=\"\(.run_url)\">Workflow run</a></td></tr>"' pages/history.json
-            echo "</tbody></table>"
-            echo "</body></html>"
-          } > pages/index.html
+      # -----------------------------
+      # BUILD DASHBOARD HTML
+      # -----------------------------
+      - name: Generate dashboard
+        run: |
+          cat << 'EOF' > pages/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>API Test Dashboard</title>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <style>
+              body{font-family:Arial;max-width:1100px;margin:auto}
+              table{border-collapse:collapse;width:100%}
+              th,td{border:1px solid #ddd;padding:6px}
+              th{background:#f4f4f4}
+              .pass{color:green;font-weight:bold}
+              .fail{color:red;font-weight:bold}
+            </style>
+          </head>
+          <body>
+            <h1>API Test Dashboard</h1>
 
-      - name: Upload current run artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: api-test-report-${{ github.run_id }}-${{ github.run_attempt }}
-          path: artifacts/current-run
+            <canvas id="trend"></canvas>
 
-      - name: Publish reports to GitHub Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+            <h2>Run History</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th><th>Time</th><th>Status</th>
+                  <th>Pass</th><th>Fail</th><th>Links</th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+
+            <script>
+              fetch('history.json')
+                .then(r=>r.json())
+                .then(data=>{
+                  const labels = data.map(d=>d.time);
+                  const fails = data.map(d=>d.fail);
+
+                  new Chart(document.getElementById('trend'),{
+                    type:'line',
+                    data:{
+                      labels:labels,
+                      datasets:[{label:'Failures',data:fails}]
+                    }
+                  });
+
+                  const rows = document.getElementById('rows');
+                  data.reverse().forEach(d=>{
+                    rows.innerHTML += `
+                      <tr>
+                        <td>${d.id}</td>
+                        <td>${d.time}</td>
+                        <td class="${d.status==='passed'?'pass':'fail'}">${d.status}</td>
+                        <td>${d.pass}</td>
+                        <td>${d.fail}</td>
+                        <td>
+                          <a href="${d.report}">HTML</a> |
+                          <a href="${d.allure}">Allure</a>
+                        </td>
+                      </tr>`;
+                  });
+                });
+            </script>
+          </body>
+          </html>
+          EOF
+
+      # -----------------------------
+      # DEPLOY TO PAGES
+      # -----------------------------
+      - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: pages
 
-      - name: Mark workflow as failed if tests failed
+      # -----------------------------
+      # FAIL WORKFLOW IF TEST FAILED
+      # -----------------------------
+      - name: Fail if needed
         if: steps.run_tests.outputs.newman_exit_code != '0'
-        run: |
-          echo "Newman tests failed."
-          exit 1
+        run: exit 1
