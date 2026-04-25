@@ -196,6 +196,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: pages
+          publish_branch: gh_pages # ✅ IMPORTANT
 
       # -----------------------------
       # FAIL WORKFLOW IF TEST FAILED
@@ -203,3 +204,8 @@ jobs:
       - name: Fail if needed
         if: steps.run_tests.outputs.newman_exit_code != '0'
         run: exit 1
+
+      - name: Debug deployed files
+        run: |
+          echo "==== FILE STRUCTURE ===="
+          ls -R pages
