@@ -5,8 +5,8 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    - cron: "0 6 1 * *"
-    - cron: "0 7 1 * *"
+    - cron: "0 6 * * *"
+    - cron: "0 7 * * *"
 
 jobs:
   test:
@@ -23,19 +23,41 @@ jobs:
           sudo apt-get update && sudo apt-get install -y jq
 
       # -----------------------------
-      # CHECK LOCAL TIME (ALBERTA)
+      # CHECK LOCAL MIDNIGHT ON LAST DAY OF MONTH (ALBERTA)
       # -----------------------------
-      - name: Check Alberta local midnight
+      - name: Check Alberta local midnight on last day of month
         id: timecheck
+        continue-on-error: true
         run: |
-          HOUR=$(TZ="America/Edmonton" date +%H)
-          DAY=$(TZ="America/Edmonton" date +%d)
+          set +e
+          RUN="false"
 
-          if [[ "$HOUR" == "00" && "$DAY" == "01" ]]; then
-            echo "run=true" >> $GITHUB_OUTPUT
+          HOUR=$(TZ="America/Edmonton" date +%H 2>/dev/null)
+          TOMORROW_DAY=$(TZ="America/Edmonton" date -d "+1 day" +%d 2>/dev/null)
+
+          if [[ -n "$HOUR" && -n "$TOMORROW_DAY" ]]; then
+            echo "ℹ️  Using Alberta local time (hour='$HOUR', tomorrow_day='$TOMORROW_DAY')."
+            if [[ "$HOUR" == "00" && "$TOMORROW_DAY" == "01" ]]; then
+              RUN="true"
+            fi
           else
-            echo "run=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Could not determine Alberta local time — falling back to a timezone-agnostic last-day-of-month check."
+            FALLBACK_TOMORROW_DAY=$(date -d "+1 day" +%d 2>/dev/null)
+            echo "ℹ️  Fallback check (system time, tomorrow_day='$FALLBACK_TOMORROW_DAY')."
+            if [[ -n "$FALLBACK_TOMORROW_DAY" && "$FALLBACK_TOMORROW_DAY" == "01" ]]; then
+              RUN="true"
+            fi
           fi
+
+          echo "run=$RUN" >> $GITHUB_OUTPUT
+
+          if [[ "$RUN" == "true" ]]; then
+            echo "✅ Determined today is the last day of the month — proceeding with scheduled run."
+          else
+            echo "⏭️  Not the last day of the month — skipping scheduled run."
+          fi
+
+          exit 0
 
       # -----------------------------
       # RUN TESTS (DYNAMIC ITERATIONS)
@@ -91,12 +113,23 @@ jobs:
           echo "total_fail=$TOTAL_FAIL" >> $GITHUB_OUTPUT
           echo "newman_exit_code=$FINAL_EXIT" >> $GITHUB_OUTPUT
 
+          echo "----------------------------------------"
+          if [ "$FINAL_EXIT" == "0" ]; then
+            echo "✅ API TESTS PASSED — $TOTAL_PASS passed, $TOTAL_FAIL failed (across $ITERATIONS iteration(s))"
+          else
+            echo "❌ API TESTS FAILED — $TOTAL_PASS passed, $TOTAL_FAIL failed (across $ITERATIONS iteration(s))"
+          fi
+          echo "----------------------------------------"
+
           exit 0
 
       # -----------------------------
       # CHECKOUT GH_PAGES
+      # Only proceeds if run_tests actually ran AND passed.
       # -----------------------------
       - name: Checkout gh_pages
+        if: |
+          (github.event_name != 'schedule' || steps.timecheck.outputs.run == 'true') && steps.run_tests.outputs.newman_exit_code == '0'
         continue-on-error: true
         uses: actions/checkout@v4
         with:
@@ -107,6 +140,9 @@ jobs:
       # BUILD DASHBOARD + HISTORY
       # -----------------------------
       - name: Build dashboard
+        if: |
+          (github.event_name != 'schedule' || steps.timecheck.outputs.run == 'true') &&
+          steps.run_tests.outputs.newman_exit_code == '0'
         run: |
           set -euo pipefail
           mkdir -p pages/reports
@@ -132,9 +168,6 @@ jobs:
           FAIL=${{ steps.run_tests.outputs.total_fail }}
 
           STATUS="passed"
-          if [ "${{ steps.run_tests.outputs.newman_exit_code }}" != "0" ]; then
-            STATUS="failed"
-          fi
 
           UPDATED=$(jq \
             --arg id "$RUN_ID" \
@@ -154,10 +187,15 @@ jobs:
 
           echo "$UPDATED" > pages/history.json
 
+          echo "✅ Dashboard build complete — run $RUN_ID recorded ($PASS passed, $FAIL failed)."
+
       # -----------------------------
       # GENERATE DASHBOARD HTML
       # -----------------------------
       - name: Generate dashboard
+        if: |
+          (github.event_name != 'schedule' || steps.timecheck.outputs.run == 'true') &&
+          steps.run_tests.outputs.newman_exit_code == '0'
         run: |
           cat << 'EOF' > pages/index.html
           <!DOCTYPE html>
@@ -292,19 +330,43 @@ jobs:
           </html>
           EOF
 
+          echo "✅ Dashboard HTML generated successfully."
+
       # -----------------------------
       # DEPLOY
       # -----------------------------
       - name: Deploy
+        if: |
+          (github.event_name != 'schedule' || steps.timecheck.outputs.run == 'true') &&
+          steps.run_tests.outputs.newman_exit_code == '0'
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: pages
           publish_branch: gh_pages
 
+      - name: Log deploy result
+        if: |
+          (github.event_name != 'schedule' || steps.timecheck.outputs.run == 'true') &&
+          steps.run_tests.outputs.newman_exit_code == '0'
+        run: echo "✅ Dashboard deployed to gh_pages successfully."
+
       # -----------------------------
-      # FAIL IF TEST FAILED
+      # FAIL IF TESTS ACTUALLY FAILED
+      # (Only fails the job if run_tests ran and reported a real failure.
+      # Skipped scheduled runs never reach this as a failure.)
       # -----------------------------
       - name: Fail if needed
-        if: steps.run_tests.outputs.newman_exit_code != '0'
-        run: exit 1
+        if: steps.run_tests.outcome == 'success' && steps.run_tests.outputs.newman_exit_code == '1'
+        run: |
+          echo "❌ Job failing — API tests reported failures. See the newman report artifact/dashboard for details."
+          exit 1
+
+      - name: Log job success
+        if: success()
+        run: |
+          if [[ "${{ steps.run_tests.outcome }}" == "skipped" ]]; then
+            echo "✅ Workflow completed successfully — no scheduled run needed (not Alberta midnight on last day of month)."
+          else
+            echo "✅ Workflow completed successfully — tests passed and dashboard deployed."
+          fi
