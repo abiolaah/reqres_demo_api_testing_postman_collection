@@ -69,6 +69,12 @@ jobs:
           set +e
           mkdir -p artifacts/current-run
 
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo "📅 Triggered by: schedule (Alberta last-day-of-month check passed)"
+          else
+            echo "🚀 Triggered by: ${{ github.event_name }} (not schedule) — running tests unconditionally"
+          fi
+
           ITERATIONS=1
 
           if [[ "${{ github.event_name }}" == "schedule" && "${{ steps.timecheck.outputs.run }}" == "true" ]]; then
